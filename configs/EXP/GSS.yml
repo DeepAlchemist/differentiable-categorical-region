@@ -1,0 +1,111 @@
+MODEL:
+  META_ARCHITECTURE: "GSS" # TODO
+  #FREEZE_LAYERS: [ "stem", "middle", "transform", "segment_head", "part_transform" ] # fg_transform, origin
+
+  NUM_PART: 3
+  BRANCH: ["globe", "part", "foreground"]
+  GLOBAL_ATTN: False
+  BACKBONE:
+    NAME: "build_simple_resnet_backbone"
+    NORM: "BN"
+    DEPTH: "50x"
+    LAST_STRIDE: 1
+    FEAT_DIM: 2048
+    WITH_IBN: False
+    WITH_CSA: False
+    WITH_NL: False # TODO
+    WITH_NLKEY: False # TODO
+    PRETRAIN: True
+    PRETRAIN_PATH: "/root/.cache/torch/checkpoints/resnet50-19c8e357.pth"
+
+  HEADS:
+    NAME: "MultiHead"
+    NORM: "BN"
+    WITH_BNNECK: True
+    POOL_LAYER: "avgpool" # TODO
+    NECK_FEAT: "before"
+    CLS_LAYER: "linear"
+
+  LOSSES:
+    NAME: ("CrossEntropyLoss", "TripletLoss") # TODO
+
+    CE:
+      EPSILON: 0.1
+      SCALE: 1. # trade-off
+
+    TRI:
+      MARGIN: 0.
+      HARD_MINING: True
+      NORM_FEAT: False
+      SCALE: 1. # trade-off
+
+    OCCLUDED:
+      ENABLED: False
+
+DATASETS:
+  NAMES: ("DukeMTMC",) # [Market1501, OccludedDukeMTMC, DukeMTMC, MSMT17]
+  TESTS: ("DukeMTMC",) # [OccludedREID PartialREID PartialiLIDS]
+
+INPUT:
+  SIZE_TRAIN: [ 384, 128 ]
+  SIZE_TEST: [ 384, 128 ]
+  RSE: False
+  REA:
+    ENABLED: False # TODO
+    PROB: 0.5
+    MEAN: [ 123.675, 116.28, 103.53 ]
+  DO_PAD: True
+  DO_FLIP: True
+
+DATALOADER:
+  PK_SAMPLER: True  # TODO
+  NAIVE_WAY: True
+  NUM_INSTANCE: 12
+  NUM_WORKERS: 8
+
+#SOLVER:
+#  OPT: "Adam"
+#  MAX_ITER: 10
+#  BASE_LR: 0.00035
+#  BIAS_LR_FACTOR: 1.
+#  WEIGHT_DECAY: 0.0005
+#  WEIGHT_DECAY_BIAS: 0.0005
+#  IMS_PER_BATCH: 48
+#
+#  SCHED: "WarmupCosineAnnealingLR"
+#  DELAY_ITERS: 5
+#  ETA_MIN_LR: 0.00000077
+#  GAMMA: 0.1
+#
+#  WARMUP_FACTOR: 0.01
+#  WARMUP_ITERS: 3 
+#  FREEZE_ITERS: 2 
+#
+#  CHECKPOINT_PERIOD: 5
+
+SOLVER:
+  OPT: "Adam"
+  MAX_ITER: 70
+  BASE_LR: 0.00035
+  BIAS_LR_FACTOR: 1.
+  WEIGHT_DECAY: 0.0005
+  WEIGHT_DECAY_BIAS: 0.0005
+  IMS_PER_BATCH: 48
+
+  SCHED: "WarmupCosineAnnealingLR"
+  DELAY_ITERS: 35
+  ETA_MIN_LR: 0.00000077
+  GAMMA: 0.1
+
+  WARMUP_FACTOR: 0.01
+  WARMUP_ITERS: 15 
+  FREEZE_ITERS: 10 
+
+  CHECKPOINT_PERIOD: 35
+
+TEST:
+  EVAL_PERIOD: 10
+  IMS_PER_BATCH: 128
+  METRIC: "holistic" # [euclidean cosine holistic partial] # TODO
+
+CUDNN_BENCHMARK: False
